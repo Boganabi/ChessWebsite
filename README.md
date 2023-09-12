@@ -1,3 +1,10 @@
+# How to use
+
+With Node installed on your machine:
+- run npm install
+- run npm run dev
+- go to your browser and go to localhost:5173
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

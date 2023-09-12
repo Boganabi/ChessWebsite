@@ -43,8 +43,17 @@
 }
 */
 
+body {
+  display: inline;
+}
+
 .boardwrapper {
   margin: 50px;
-  display: flex;
-  justify-content: center;
+  /* display: flex;
+  justify-content: center; */
+}
+
+div[data-boardid] {
+  margin: auto;
+  width: 50%;
 }
