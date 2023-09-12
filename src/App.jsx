@@ -13,7 +13,12 @@ import './App.css';
 function App() {
 
   const [game, setGame] = useState(new Chess());
+  const [gamefen, setGameFen] = useState();
   const [chessboardSize, setChessboardSize] = useState(560);
+
+  // start stockfish web worker
+  const stockfish = new Worker("./stockfish.js");
+  const DEPTH = 8; // number of halfmoves for engine to look ahead
 
   useEffect(() => {
     function handleResize(){
@@ -28,16 +33,59 @@ function App() {
 
     window.addEventListener("resize", handleResize);
     handleResize();
+
     return () => window.removeEventListener("resize", handleResize);
   }, [])
+
+  useEffect(() => {
+    //function StockfishMove(fen){
+    const possibleMoves = game.moves();
+    if (game.isGameOver() || game.isDraw() || possibleMoves.length === 0)
+      return; // exit if the game is over
+
+    console.log("fen is " + gamefen);
+
+    stockfish.postMessage("uci");
+    stockfish.postMessage("position fen " + gamefen);
+    stockfish.postMessage("go depth " + DEPTH);
+    // stockfish.postMessage(`position fen $(FEN_POSITION)`);
+    // stockfish.postMessage(`go depth $(DEPTH)`);
+
+    stockfish.onmessage = (e) => {
+      console.log(e.data); // this will show the best move in the console
+    };
+    //}
+
+  }, [gamefen]);
 
   function makeAMove(move) {
     const gameCopy = new Chess(); // { ...game };
     gameCopy.loadPgn(game.pgn());
     const result = gameCopy.move(move);
     setGame(gameCopy);
+    if(result){
+      setGameFen(gameCopy.fen());
+    }
     return result; // null if the move was illegal, the move object if the move was legal
   }
+
+  // function StockfishMove(fen){
+  //   const possibleMoves = game.moves();
+  //   if (game.isGameOver() || game.isDraw() || possibleMoves.length === 0)
+  //     return; // exit if the game is over
+
+  //   console.log("fen is " + fen);
+
+  //   stockfish.postMessage("uci");
+  //   stockfish.postMessage("position fen " + fen);
+  //   stockfish.postMessage("go depth " + DEPTH);
+  //   // stockfish.postMessage(`position fen $(FEN_POSITION)`);
+  //   // stockfish.postMessage(`go depth $(DEPTH)`);
+
+  //   stockfish.onmessage = (e) => {
+  //     console.log(e.data); // this will show the best move in the console
+  //   };
+  // }
 
   // function makeRandomMove() {
   //   const possibleMoves = game.moves();
@@ -57,6 +105,9 @@ function App() {
     // illegal move
     if (move === null) return false;
     // setTimeout(makeRandomMove, 200);
+    // const FEN_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // may get fen from board later?
+    // const fenpos = game.fen();
+    // StockfishMove(fenpos);
     return true;
   }
 

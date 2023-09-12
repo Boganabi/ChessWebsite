@@ -57,3 +57,17 @@ div[data-boardid] {
   margin: auto;
   width: 50%;
 }
+
+svg[style] {
+  /* display: block;
+  margin: auto; */
+  /* width: 50%; */
+  /* display: flex;
+  justify-content: center; */
+  /* text-align: center; */
+  position: relative;
+  left: 50%;
+  -webkit-transform: translateX(50%);
+  -ms-transform: translateX(50%);
+  transform: translateX(50%);
+}
