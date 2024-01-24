@@ -21,6 +21,7 @@ function SettingsBar(props) {
                 <input type="checkbox" onClick={() => props.changeColor(switchColor())}/>
                 <span className = "slider" />
             </label>
+            <button className="buttons" onClick={() => { props.start() } }>Start</button>
         </div>
     )
 }
