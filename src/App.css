@@ -4,19 +4,18 @@ body {
 }
 
 .boardwrapper {
-  margin: 50px;
-  margin-left: 150px;
+  margin: auto;
+  width: 60%;
+  position: absolute;
+  margin-top: 50px;
+  margin-left: 200px;
 }
 
-div[data-boardid] {
+/* div[data-boardid] {
   margin: auto;
   width: 50%;
 }
 
 svg[style] {
-  position: relative;
-  left: 50%;
-  -webkit-transform: translateX(50%);
-  -ms-transform: translateX(50%);
-  transform: translateX(50%);
-}
+  position: absolute;
+} */

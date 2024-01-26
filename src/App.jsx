@@ -25,16 +25,23 @@ function App() {
 
   useEffect(() => {
     function handleResize(){
-      const display = document.getElementsByClassName("boardwrapper")[0];
-      if(display.offsetHeight != 0){
-        setChessboardSize(display.offsetHeight);
+      console.log("resizing");
+      const display = document.getElementsByClassName("boardSizer")[0];
+      if(display.offsetWidth != 0 && display.offsetHeight != 0){
+        if(display.offsetWidth < window.innerHeight * 0.75){
+          setChessboardSize(display.offsetWidth);
+        }
       }
     }
 
     window.addEventListener("resize", handleResize);
+    window.addEventListener("fullscreenchange", handleResize);
     handleResize();
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("fullscreenchange", handleResize);
+    }
   }, [])
 
   function startStockfish() {
@@ -123,7 +130,9 @@ function App() {
     <>
       {!gameStarted && <SettingsBar changeColor={setPlayerColor} start={() => { startStockfish(); setGameStarted(true); }}/> }
       <div className="boardwrapper">
-        <Chessboard boardWidth={chessboardSize} position={game.fen()} onPieceDrop={onDrop} boardOrientation={playerColor} />
+        <div className="boardSizer">
+          <Chessboard boardWidth={chessboardSize} position={game.fen()} onPieceDrop={onDrop} boardOrientation={playerColor} />
+        </div>
       </div>
     </>
   )
