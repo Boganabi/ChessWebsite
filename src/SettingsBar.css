@@ -134,3 +134,8 @@ input:checked + .slider:before {
   border-width: 4px 0 0;
   background: none;
 }
+
+.engineDisplay{
+  margin-top: 15px;
+  margin-bottom: 0;
+}
