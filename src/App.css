@@ -8,7 +8,23 @@ body {
   width: 60%;
   position: absolute;
   margin-top: 50px;
-  margin-left: 200px;
+  /* margin-left: 200px; */
+  /* margin-left: 20vw; */
+  left: 50%;
+  transform: translate(-50%);
+}
+
+@media all and (max-width: 980px) {
+  .boardwrapper {
+    left: 490px;
+    width: 70%
+  }
+}
+
+@media all and (max-width: 400px) {
+  .boardwrapper {
+    left: 300px;
+  }
 }
 
 /* div[data-boardid] {
