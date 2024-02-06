@@ -10,13 +10,13 @@ body {
   margin-top: 50px;
   /* margin-left: 200px; */
   /* margin-left: 20vw; */
-  left: 50%;
-  transform: translate(-50%);
+  left: 20%;
+  /* transform: translate(-50%); */
 }
 
 @media all and (max-width: 980px) {
   .boardwrapper {
-    left: 490px;
+    /* left: 10%; */
     width: 70%
   }
 }

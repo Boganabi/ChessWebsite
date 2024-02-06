@@ -20,7 +20,7 @@ function App() {
   const [useStockfish, setUseStockfish] = useState("stockfish"); // have button to choose the engine later
   const [engine, setEngine] = useState();
 
-  const DEPTH = 15; // number of halfmoves for engine to look ahead
+  const DEPTH = 1; // number of halfmoves for engine to look ahead
 
   // handles selection of engine
   useEffect(() => {

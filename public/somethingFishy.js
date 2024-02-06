@@ -102,8 +102,6 @@ let position = "";
 let globalSum = 0;
 let positionCount = 0;
 
-let workaroundGame;
-
 // console.log("hello from web worker");
 
 onmessage = function(e) {
@@ -121,18 +119,17 @@ onmessage = function(e) {
     }
     if(data[0] === "go"){
         // find best move and return it with postMessage
+        console.log("thinking...")
         const [bestmove, evaluation, timeUsed, posPerSec] = findBestMove(data[2], globalSum);
+        console.log(bestmove.from + bestmove.to);
         postMessage("evalrate " + posPerSec);
         postMessage("time " + timeUsed);
         postMessage("eval " + evaluation);
-        postMessage("bestmove " + bestmove);
+        postMessage("bestmove " + bestmove.from + bestmove.to);
     }
 }
 
 function findBestMove(depth, currSum){
-    // console.log(workaroundGame);
-    // const gameCopy = workaroundGame.loadPgn(workaroundGame.pgn());
-    // const game = gameCopy.fen();
 
     const game = new Chess(position);
     const color = game.turn();
@@ -174,8 +171,11 @@ function findBestMove(depth, currSum){
  */
 function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
     positionCount++;
+    // console.log(positionCount);
+    // console.log(depth);
 
-    var children = game.ugly_moves({ verbose: true });
+    // var children = game.ugly_moves({ verbose: true });
+    var children = game.moves({ verbose: true });
 
     // Sort moves randomly, so the same move isn't always picked on ties
     children.sort(function(a, b){return 0.5 - Math.random()});
@@ -186,6 +186,8 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
         return [null, sum]
     }
 
+    // console.log(depth);
+
     // Find maximum/minimum from list of 'children' (possible moves)
     var maxValue = Number.NEGATIVE_INFINITY;
     var minValue = Number.POSITIVE_INFINITY;
@@ -194,7 +196,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
         currMove = children[i];
 
         // Note: in our case, the 'children' are simply modified game states
-        var currPrettyMove = game.ugly_move(currMove);
+        var currPrettyMove = game.move(currMove);
         var newSum = evaluate(currPrettyMove, sum, color);
         var [childBestMove, childValue] = minimax(game, depth - 1, alpha, beta, !isMaximizingPlayer, newSum, color);
         
@@ -238,8 +240,12 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
  * using the material weights and piece square tables.
  */
 function evaluate(move, prevSum, color){
+    // console.log(move);
     var from = [8 - parseInt(move.from[1]), move.from.charCodeAt(0) - 'a'.charCodeAt(0)];
     var to = [8 - parseInt(move.to[1]), move.to.charCodeAt(0) - 'a'.charCodeAt(0)];
+
+    console.log(from);
+    console.log(to);
 
     // Change endgame behavior for kings
     if (prevSum < -1500) {
