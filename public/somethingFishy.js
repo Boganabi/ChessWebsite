@@ -4,14 +4,15 @@
 // import { Chess } from 'chess.js';
 // importScripts('./node_modules/chess.js');
 importScripts('https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js');
+importScripts('./evalHelperFuncs.js');
 
 /* 
  * Piece Square Tables, adapted from Sunfish.py:
  * https://github.com/thomasahle/sunfish/blob/master/sunfish.py
  */
 
-var weights = { 'p': 100, 'n': 280, 'b': 320, 'r': 479, 'q': 929, 'k': 60000, 'k_e': 60000 };
-var pst_w = {
+const weights = { 'p': 100, 'n': 280, 'b': 320, 'r': 479, 'q': 929, 'k': 60000, 'k_e': 60000 };
+const pst_w = {
     'p':[
             [ 100, 100, 100, 100, 105, 100, 100,  100],
             [  78,  83,  86,  73, 102,  82,  85,  90],
@@ -85,7 +86,7 @@ var pst_w = {
             [-50, -30, -30, -30, -30, -30, -30, -50]
         ]
 };
-var pst_b = {
+const pst_b = {
     'p': pst_w['p'].slice().reverse(),
     'n': pst_w['n'].slice().reverse(),
     'b': pst_w['b'].slice().reverse(),
@@ -95,12 +96,15 @@ var pst_b = {
     'k_e': pst_w['k_e'].slice().reverse()
 }
 
-var pstOpponent = {'w': pst_b, 'b': pst_w};
-var pstSelf = {'w': pst_w, 'b': pst_b};
+const pstOpponent = {'w': pst_b, 'b': pst_w};
+const pstSelf = {'w': pst_w, 'b': pst_b};
 
 let position = "";
 let globalSum = 0;
 let positionCount = 0;
+
+const posTable = new Set();
+var dict = {};
 
 // console.log("hello from web worker");
 
@@ -121,6 +125,7 @@ onmessage = function(e) {
         // find best move and return it with postMessage
         console.log("thinking...")
         const [bestmove, evaluation, timeUsed, posPerSec] = findBestMove(data[2], globalSum);
+        console.log(bestmove);
         console.log(bestmove.from + bestmove.to);
         postMessage("evalrate " + posPerSec);
         postMessage("time " + timeUsed);
@@ -132,11 +137,14 @@ onmessage = function(e) {
 function findBestMove(depth, currSum){
 
     const game = new Chess(position);
+    const test = new HelperFuncs();
     const color = game.turn();
 
     positionCount = 0;
 
+    // consider using iterative deepening, transposition table, and aspiration windows
     var d = new Date().getTime();
+    // console.profile();
     var [bestMove, bestMoveValue] = minimax(
         game,
         depth,
@@ -146,6 +154,7 @@ function findBestMove(depth, currSum){
         currSum,
         color
     );
+    // console.profileEnd();
     var d2 = new Date().getTime();
     var moveTime = d2 - d;
     var positionsPerS = (positionCount * 1000) / moveTime;
@@ -168,6 +177,8 @@ function findBestMove(depth, currSum){
  * 
  * Output:
  *  the best move at the root of the current subtree.
+ * 
+ * current optimized time at depth 5: 52000
  */
 function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
     positionCount++;
@@ -175,14 +186,22 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
     // console.log(depth);
 
     // var children = game.ugly_moves({ verbose: true });
-    var children = game.moves({ verbose: true });
+    const children = game.moves({ verbose: true, legal: false });
+    // const children = game.moves();
+
+    // const children = new Set(); // use set for faster lookups
+    // const tempArr = game.moves({ verbose: true })
+    // const L = tempArr.length;
+    // for(var i = 0; i<L; i++) { children.add(tempArr[i]) } // adding like this is faster than constructing it
+
+    // console.log(children.size);
 
     // Sort moves randomly, so the same move isn't always picked on ties
-    children.sort(function(a, b){return 0.5 - Math.random()});
+    // children.sort(function(a, b){return 0.5 - Math.random()});
     
     var currMove;
     // Maximum depth exceeded or node is a terminal node (no children)
-    if (depth === 0 || children.length === 0) {
+    if (depth === 0 || children.length === 0) { // use children.length with a list
         return [null, sum]
     }
 
@@ -193,31 +212,52 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
     var minValue = Number.POSITIVE_INFINITY;
     var bestMove;
     for (var i = 0; i < children.length; i++) {
+    // for (const currMove of children.values()) {
         currMove = children[i];
+        // console.log(currMove);
 
         // Note: in our case, the 'children' are simply modified game states
         var currPrettyMove = game.move(currMove);
-        var newSum = evaluate(currPrettyMove, sum, color);
-        var [childBestMove, childValue] = minimax(game, depth - 1, alpha, beta, !isMaximizingPlayer, newSum, color);
-        
-        game.undo();
+        const currPos = game.fen();
+        var currEval;
+
+        // check position table to see if it was already evaluated
+        if(posTable.has(currPos)){
+            game.undo();
+            // get eval from dictionary storing the position found in posTable
+            currEval = dict[currPos];
+        }
+        else {
+            var newSum = evaluate(currMove, sum, color);
+            // var newSum = evaluate(currPrettyMove, sum, color);
+            var [childBestMove, childValue] = minimax(game, depth - 1, alpha, beta, !isMaximizingPlayer, newSum, color);
+
+            // add to set lookup and dictionary
+            posTable.add(currPos);
+            dict[currPos] = childValue;
+            currEval = childValue
+            
+            game.undo();
+        }
     
         if (isMaximizingPlayer) {
-            if (childValue > maxValue) {
-                maxValue = childValue;
-                bestMove = currPrettyMove;
+            if (currEval > maxValue) {
+                maxValue = currEval;
+                // bestMove = currPrettyMove;
+                bestMove = currMove;
             }
-            if (childValue > alpha) {
-                alpha = childValue;
+            if (currEval > alpha) {
+                alpha = currEval;
             }
         }
         else {
-            if (childValue < minValue) {
-                minValue = childValue;
-                bestMove = currPrettyMove;
+            if (currEval < minValue) {
+                minValue = currEval;
+                // bestMove = currPrettyMove;
+                bestMove = currMove;
             }
-            if (childValue < beta) {
-                beta = childValue;
+            if (currEval < beta) {
+                beta = currEval;
             }
         }
 
@@ -241,11 +281,26 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer, sum, color) {
  */
 function evaluate(move, prevSum, color){
     // console.log(move);
+
+    /**
+     * move contains the following:
+     *   color: Color
+     *   from: Square
+     *   to: Square
+     *   piece: PieceSymbol
+     *   captured?: PieceSymbol
+     *   promotion?: PieceSymbol
+     *   flags: string
+     *   san: string
+     *   lan: string
+     *   before: string
+     *   after: string
+     */
+
+    // console.log(move)
     var from = [8 - parseInt(move.from[1]), move.from.charCodeAt(0) - 'a'.charCodeAt(0)];
     var to = [8 - parseInt(move.to[1]), move.to.charCodeAt(0) - 'a'.charCodeAt(0)];
-
-    console.log(from);
-    console.log(to);
+    // console.log(to)
 
     // Change endgame behavior for kings
     if (prevSum < -1500) {
